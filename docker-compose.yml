@@ -1,0 +1,21 @@
+version: '3.1'
+
+services:
+
+  mongo:
+    image: mongo:6.0
+    restart: always
+    ports:
+      - 27017:27017
+    volumes:
+      - ~/mongodb/data/db:/data/db
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD}
+
+  bot:
+    build: .
+    restart: always
+    environment:
+      BOT_TOKEN: ${BOT_TOKEN}
+      CONNECTION: mongodb://${MONGO_USERNAME}:${MONGO_PASSWORD}@localhost:27017
