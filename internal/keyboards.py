@@ -39,6 +39,7 @@ def get_keyboard_users(users, start_i=0):
     btn_next_l = types.InlineKeyboardButton(text="⬅️", callback_data=f"user_{start_i-users_on_page}_>")
     for i in range(start_i, start_i + users_on_page):
         if i == len(users): break
+        if users[i]["name"] == "": continue
         keyboard.add(
             types.InlineKeyboardButton(
                 text=f"{users[i]['name']}", 
@@ -52,4 +53,4 @@ def get_keyboard_users(users, start_i=0):
         keyboard.add(btn_refresh, btn_next_r)
     else: 
         keyboard.add(btn_next_l, btn_refresh, btn_next_r,)
-    return 
+    return keyboard

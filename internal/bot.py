@@ -31,11 +31,10 @@ bot = telebot.TeleBot(token, parse_mode=None)
 api = FakeAsyncApi(gpt_url)
 store = Store(mongo_conn)
 
-
 class Access(custom_filters.SimpleCustomFilter):
     key='user_have_access'
     @staticmethod
-    def check_access(m: types.Message):
+    def check(m: types.Message):
         user = store.get_user(m.from_user.id)
         if user["access"]:
             return True
@@ -50,7 +49,7 @@ def message_next(m):
         content.get_rand_facts(), 
         parse_mode=content.markdown
     )
-    
+
 @bot.message_handler(commands=['admin'])
 def handle_message_users(m):
     user = store.get_user(m.from_user.id)
@@ -60,6 +59,7 @@ def handle_message_users(m):
     users = store.get_users(with_admins=False)
     if not users:
         bot.send_message(m.chat.id, "Пользователи не найдены")
+        return
     bot.send_message(m.chat.id, "👨🏼‍💻 Пользователи",reply_markup=kb.get_keyboard_users(users))
     
 @bot.message_handler(commands=['access'])
@@ -68,22 +68,28 @@ def handle_message_access(m):
     if user["access"] == True:
         bot.send_message(m.chat.id, "У тебя уже есть доступ /company")
         return
-    bot.send_message(m.chat.id, "👤 Напиши свое ФИО")
+    bot.send_message(m.chat.id, "👤 Напиши свое ФИО\n/cancel - Отмена")
     bot.register_next_step_handler(m, user_access_step_0)
 
 def user_access_step_0(m):
     if not m.text:
         bot.send_message(m.chat.id, "Ожидается текст")
         return # TODO
+    elif m.text == "/cancel":
+        bot.send_message(m.chat.id, "Отмена операции")
+        return
     user = store.get_user(m.chat.id)
     user["name"] = m.text
-    bot.send_message(m.chat.id, "👩🏽‍💼 Теперь своего руководителя и подразделение")
+    bot.send_message(m.chat.id, "👩🏽‍💼 Теперь своего руководителя и подразделение\n/cancel - Отмена")
     bot.register_next_step_handler(m, user_access_step_1, user)
 
 def user_access_step_1(m, user):
     if not m.text:
         bot.send_message(m.chat.id, "Ожидается текст")
         return # TODO
+    elif m.text == "/cancel":
+        bot.send_message(m.chat.id, "Отмена операции")
+        return
     if not store.admins:
         bot.send_message(m.chat.id, "Не могу найти кому отправить запрос, попробуй позже")
         return
@@ -205,20 +211,22 @@ def callback_bot(c: types.CallbackQuery):
                 reply_markup=kb.get_keyboard_users(users))
         case ["users", _, ">"]:
             start_i = int(data[1])
+            users = store.get_users(with_admins=False)
             if start_i <= 0: start_i = 0
             bot.edit_message_text("👩‍💻 Пользователи",
                 c.from_user.id, c.message.id, 
-                reply_markup=kb.get_keyboard_users(start_i=start_i))
+                reply_markup=kb.get_keyboard_users(users, start_i=start_i))
 
         case ["user", "id", _]:
-            uuid = data[-1]
-            user = store.get_user(uuid)
+            _id = data[-1]
+            user = store.get_user_by_id(_id)
             if not user:
                 bot.send_message(c.message.chat.id, "Пользователя больше не существует, обновите список")
                 return
             keyboard = kb.get_keyboard_access(user, true=not user["access"])
             keyboard.add(types.InlineKeyboardButton(text="↩️", callback_data=f"users_{0}_>"))
             bot.edit_message_text(f"{user['name']}\n{user['about']}", 
+                    c.from_user.id, c.message.id, 
                     reply_markup=keyboard)
             
     return

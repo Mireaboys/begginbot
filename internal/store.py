@@ -1,4 +1,5 @@
 from pymongo import MongoClient
+from bson import ObjectId
 
 class Task:
     def __init__(
@@ -27,15 +28,17 @@ class Store:
         self.store = MongoClient(connection)["store"]
         self.refresh_admins()
 
-    def get_user(self, uuid, admin=False):
+    def get_user(self, uuid, admin=False, force=True):
         user = self.store.users.find_one({"uuid": uuid})
-        if not user:
+        if not user and force:
             data = self.store.users.insert_one({"uuid": uuid, "access": False, "admin": admin, "name": ""})
             user = self.store.users.find_one({"_id": data.inserted_id})
         return user
-    
+    def get_user_by_id(self, _id):
+        return self.store.users.find_one({"_id": ObjectId(_id)})
+        
     def get_users(self, with_admins=False):
-        return self.store.users.find({"admin": with_admins, "name": not ""})
+        return [user for user in self.store.users.find({"admin": with_admins})]
 
     def refresh_admins(self):
         self.admins = [user["uuid"] for user in self.store.users.find({"admin": True})]
