@@ -35,8 +35,8 @@ def get_keyboard_access(user, true=True):
 def get_keyboard_users(users, start_i=0):
     keyboard = types.InlineKeyboardMarkup(row_width=3)
     btn_refresh = types.InlineKeyboardButton(text="🔄", callback_data=f"refresh_users")
-    btn_next_r = types.InlineKeyboardButton(text="➡️", callback_data=f"user_{start_i+users_on_page}_>")
-    btn_next_l = types.InlineKeyboardButton(text="⬅️", callback_data=f"user_{start_i-users_on_page}_>")
+    btn_next_r = types.InlineKeyboardButton(text="➡️", callback_data=f"users_{start_i+users_on_page}_>")
+    btn_next_l = types.InlineKeyboardButton(text="⬅️", callback_data=f"users_{start_i-users_on_page}_>")
     for i in range(start_i, start_i + users_on_page):
         if i == len(users): break
         if users[i]["name"] == "": continue
