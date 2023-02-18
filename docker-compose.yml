@@ -16,7 +16,5 @@ services:
   bot:
     build: .
     restart: always
-    environment:
-      BOT_TOKEN: ${BOT_TOKEN}
-      GPT_URL: http://109.107.178.170
-      CONNECTION: mongodb://${MONGO_USERNAME}:${MONGO_PASSWORD}@localhost:27017
+    env_file:
+      - .env
