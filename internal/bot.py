@@ -39,7 +39,7 @@ def message_next(m):
 @bot.message_handler(commands=['init'])
 def handle_message_access(m):
     user = store.get_user(m.chat.id, admin=True)
-    store.admins.append(user["uuid"])
+    store.refresh_admins()
     bot.send_message(m.chat.id, str(user))
 
 class Access(custom_filters.SimpleCustomFilter):
@@ -56,11 +56,16 @@ bot.add_custom_filter(Access())
 
 @bot.message_handler(commands=['access'])
 def handle_message_access(m):
+    user = store.get_user(m.chat.id)
+    if user["access"] == True:
+        bot.send_message(m.chat.id, "У тебя уже есть доступ /roles")
+        return
     bot.send_message(m.chat.id, "Напиши свое ФИО")
     bot.register_next_step_handler(m, user_access_step_0)
 
 def user_access_step_0(m):
     if not m.text:
+        bot.send_message(m.chat.id, "Ожидается текст")
         return # TODO
     user = store.get_user(m.chat.id)
     user["name"] = m.text
@@ -69,15 +74,18 @@ def user_access_step_0(m):
 
 def user_access_step_1(m, user):
     if not m.text:
+        bot.send_message(m.chat.id, "Ожидается текст")
         return # TODO
     if not store.admins:
         bot.send_message(m.chat.id, "Не могу найти кому отправить запрос, попробуй позже")
         return
     user["about"] = m.text
     store.update_user(user)
+    username = m.from_user.username if m.from_user.username else "noname"
+    store.refresh_admins() # TODO
     for a in store.admins:
-        bot.send_message(a, f"@{m.from_user.username}\n{user['name']}\n*{user['about']}*\n_Запрашивает доступ_", 
-                    reply_markup=kb.get_keyboard_access(user, true=True), parse_mode=content.markdown)
+        bot.send_message(a, f"@{username}\n{user['name']}\n{user['about']}\n\nЗапрашивает доступ", 
+                    reply_markup=kb.get_keyboard_access(user, true=True))
     bot.send_message(m.chat.id, "Я отправил сообщение выше, жди ответа. Пока можешь поразвлекать себя /roles")
 
 @bot.message_handler(commands=['start', 'help'])

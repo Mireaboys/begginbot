@@ -22,9 +22,10 @@ class Role:
 
 
 class Store:
+    admins = []
     def __init__(self, connection):
         self.store = MongoClient(connection)["store"]
-        self.admins = [user["uuid"] for user in self.store.users.find({"admin": True})]
+        self.refresh_admins()
 
     def get_user(self, uuid, admin=False):
         user = self.store.users.find_one({"uuid": uuid})
@@ -33,6 +34,9 @@ class Store:
             user = self.store.users.find_one({"_id": data.inserted_id})
         return user
     
+    def refresh_admins(self):
+        self.admins = [user["uuid"] for user in self.store.users.find({"admin": True})]
+
     def update_user(self, user):
         self.store.users.update_one(
             {"uuid": user["uuid"]},
