@@ -30,10 +30,13 @@ class Store:
     def get_user(self, uuid, admin=False):
         user = self.store.users.find_one({"uuid": uuid})
         if not user:
-            data = self.store.users.insert_one({"uuid": uuid, "access": False, "admin": admin})
+            data = self.store.users.insert_one({"uuid": uuid, "access": False, "admin": admin, "name": ""})
             user = self.store.users.find_one({"_id": data.inserted_id})
         return user
     
+    def get_users(self, with_admins=False):
+        return self.store.users.find({"admin": with_admins, "name": not ""})
+
     def refresh_admins(self):
         self.admins = [user["uuid"] for user in self.store.users.find({"admin": True})]
 

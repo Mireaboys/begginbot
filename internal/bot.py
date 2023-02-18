@@ -18,16 +18,31 @@ log = new_logger()
 
 token = os.getenv("BOT_TOKEN")
 secret = os.getenv("SECRET")
-mongo_conn = os.getenv("CONNECTION")
 gpt_url = os.getenv("GPT_URL")
+mongo_conn = os.getenv("CONNECTION")
 
-if None in [token, secret, gpt_url, mongo_conn]:
-    log.error("Not found envs")
+if None in [token, mongo_conn]:
+    log.error("Not found envs: BOT_TOKEN, CONNECTION")
     sys.exit(1)
+if None in [secret, gpt_url]:
+    log.warn("GPT_URL or SECRET: is None")
 
 bot = telebot.TeleBot(token, parse_mode=None)
 api = FakeAsyncApi(gpt_url)
 store = Store(mongo_conn)
+
+
+class Access(custom_filters.SimpleCustomFilter):
+    key='user_have_access'
+    @staticmethod
+    def check_access(m: types.Message):
+        user = store.get_user(m.from_user.id)
+        if user["access"]:
+            return True
+        bot.send_message(m.chat.id, "У тебя нет доступа к этому модулю, запросить /access")
+        return False
+    
+bot.add_custom_filter(Access())
 
 def message_next(m):
     bot.send_message(
@@ -35,32 +50,25 @@ def message_next(m):
         content.get_rand_facts(), 
         parse_mode=content.markdown
     )
-
-@bot.message_handler(commands=['init'])
-def handle_message_access(m):
-    user = store.get_user(m.chat.id, admin=True)
-    store.refresh_admins()
-    bot.send_message(m.chat.id, str(user))
-
-class Access(custom_filters.SimpleCustomFilter):
-    key='user_have_access'
-    @staticmethod
-    def check(m: types.Message):
-        user = store.get_user(m.from_user.id)
-        if user["access"]:
-            return True
-        bot.send_message(m.chat.id, "У тебя нет доступа к этому модулю, запросить /access")
-        return False
-
-bot.add_custom_filter(Access())
-
+    
+@bot.message_handler(commands=['admin'])
+def handle_message_users(m):
+    user = store.get_user(m.from_user.id)
+    if not user["admin"]:
+        bot.send_message(m.chat.id, "👤 Доступ запрещен")
+        return
+    users = store.get_users(with_admins=False)
+    if not users:
+        bot.send_message(m.chat.id, "Пользователи не найдены")
+    bot.send_message(m.chat.id, "👨🏼‍💻 Пользователи",reply_markup=kb.get_keyboard_users(users))
+    
 @bot.message_handler(commands=['access'])
 def handle_message_access(m):
     user = store.get_user(m.chat.id)
     if user["access"] == True:
-        bot.send_message(m.chat.id, "У тебя уже есть доступ /roles")
+        bot.send_message(m.chat.id, "У тебя уже есть доступ /company")
         return
-    bot.send_message(m.chat.id, "Напиши свое ФИО")
+    bot.send_message(m.chat.id, "👤 Напиши свое ФИО")
     bot.register_next_step_handler(m, user_access_step_0)
 
 def user_access_step_0(m):
@@ -69,7 +77,7 @@ def user_access_step_0(m):
         return # TODO
     user = store.get_user(m.chat.id)
     user["name"] = m.text
-    bot.send_message(m.chat.id, "Теперь своего руководителя и подразделение")
+    bot.send_message(m.chat.id, "👩🏽‍💼 Теперь своего руководителя и подразделение")
     bot.register_next_step_handler(m, user_access_step_1, user)
 
 def user_access_step_1(m, user):
@@ -87,6 +95,12 @@ def user_access_step_1(m, user):
         bot.send_message(a, f"@{username}\n{user['name']}\n{user['about']}\n\nЗапрашивает доступ", 
                     reply_markup=kb.get_keyboard_access(user, true=True))
     bot.send_message(m.chat.id, "Я отправил сообщение выше, жди ответа. Пока можешь поразвлекать себя /roles")
+
+@bot.message_handler(commands=['init'])
+def handle_message_access(m):
+    user = store.get_user(m.chat.id, admin=True)
+    store.refresh_admins()
+    bot.send_message(m.chat.id, str(user))
 
 @bot.message_handler(commands=['start', 'help'])
 def handle_message_start(m):
@@ -184,4 +198,27 @@ def callback_bot(c: types.CallbackQuery):
                 bot.send_message(uuid, "Доступ сброшен ❌")
                 bot.edit_message_reply_markup(c.message.chat.id, c.message.id, 
                         reply_markup=kb.get_keyboard_access({"uuid": uuid}, True))
+        case ["refresh", "users"]:
+            users = store.get_users(with_admins=False)
+            bot.edit_message_text("👩🏽‍💼 Пользователи",
+                c.from_user.id, c.message.id, 
+                reply_markup=kb.get_keyboard_users(users))
+        case ["users", _, ">"]:
+            start_i = int(data[1])
+            if start_i <= 0: start_i = 0
+            bot.edit_message_text("👩‍💻 Пользователи",
+                c.from_user.id, c.message.id, 
+                reply_markup=kb.get_keyboard_users(start_i=start_i))
+
+        case ["user", "id", _]:
+            uuid = data[-1]
+            user = store.get_user(uuid)
+            if not user:
+                bot.send_message(c.message.chat.id, "Пользователя больше не существует, обновите список")
+                return
+            keyboard = kb.get_keyboard_access(user, true=not user["access"])
+            keyboard.add(types.InlineKeyboardButton(text="↩️", callback_data=f"users_{0}_>"))
+            bot.edit_message_text(f"{user['name']}\n{user['about']}", 
+                    reply_markup=keyboard)
+            
     return
