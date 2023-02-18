@@ -12,6 +12,7 @@ from internal import keyboards as kb
 from internal.logger import new_logger
 from internal.api import FakeAsyncApi
 from internal.store import Store
+from internal.asseter import Asseter
 
 load_dotenv()
 log = new_logger()
@@ -30,6 +31,7 @@ if None in [secret, gpt_url]:
 bot = telebot.TeleBot(token, parse_mode=None)
 api = FakeAsyncApi(gpt_url)
 store = Store(mongo_conn)
+asseter = Asseter()
 
 class Access(custom_filters.SimpleCustomFilter):
     key='user_have_access'
@@ -120,15 +122,10 @@ def handle_message_start(m):
 @bot.message_handler(commands=['company'], user_have_access=True)
 def handle_message_company(m):
     message_next(m)
-    # bot.send_message(
-    #     m.chat.id, 
-    #     content.bio[0], 
-    #     reply_markup=kb.get_keyboard_bio(),
-    #     parse_mode=content.markdown
-    # )
     bot.send_message(
         m.chat.id, 
-        "TODO"
+        "🗄 Проводник", 
+        reply_markup=kb.get_keyboard_explorer(asseter.types),
     )
 
 @bot.message_handler(commands=['roles'])
@@ -228,5 +225,26 @@ def callback_bot(c: types.CallbackQuery):
             bot.edit_message_text(f"{user['name']}\n{user['about']}", 
                     c.from_user.id, c.message.id, 
                     reply_markup=keyboard)
-            
+        case ["photo", ">"]:
+            photo = asseter.get_rand_photo()
+            if not photo:
+                bot.send_message(c.message.chat.id, "Internal error")
+                return
+            bot.delete_message(c.from_user.id, c.message.id)
+            bot.send_photo(c.from_user.id, photo, reply_markup=kb.get_keyboard_photo_navigation())
+        case ["typesdoc", "id", _]:
+            idx = int(data[-1])
+            if idx >= len(asseter.typesdoc):
+                bot.send_message(c.message.chat.id, "Internal error")
+                return
+            match asseter.typesdoc[idx]:
+                case "Фотографии":
+                    photo = asseter.get_rand_photo()
+                    if not photo:
+                        bot.send_message(c.message.chat.id, "Internal error")
+                        return
+                    bot.send_photo(c.from_user.id, photo, reply_markup=kb.get_keyboard_photo_navigation())
+                case "Документы":
+                    pass
+
     return

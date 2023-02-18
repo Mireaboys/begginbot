@@ -2,3 +2,5 @@
 *env
 *vscode*
 mongodb/data/db
+assets/photos/*
+assets/documents/*
