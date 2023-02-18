@@ -18,3 +18,5 @@ services:
     restart: always
     env_file:
       - .env
+    environment:
+      CONNECTION: mongodb://${MONGO_USERNAME}:${MONGO_PASSWORD}@mongo:27017
