@@ -19,7 +19,7 @@ services:
     env_file:
       - .env
     volumes:
-      - /opt/bot/documents:/assets/documents
-      - /opt/bot/photos:/assets/photos
+      - /opt/bot/documents:/opt/assets/documents
+      - /opt/bot/photos:/opt/assets/photos
     environment:
       CONNECTION: mongodb://${MONGO_USERNAME}:${MONGO_PASSWORD}@mongo:27017
