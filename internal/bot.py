@@ -143,7 +143,7 @@ def handle_message_roles(m):
     bot.send_message(
         m.chat.id, 
         content.role_part_0,
-        reply_markup=kb.get_keyboard_role(roles, selected=-1, start=False),
+        reply_markup=kb.get_keyboard_roles(roles, selected=-1, start=False),
         parse_mode=content.markdown
     )
 
@@ -192,12 +192,24 @@ def callback_bot(c: types.CallbackQuery):
                     "\n\nАктивные способности:\n\t\t" + '\n\t\t'.join(role["skills"]["active"]) +\
                     "\n\nПассивные способности:\n\t\t" + '\n\t\t'.join(role["skills"]["passive"]),
                 c.from_user.id, c.message.id, 
-                reply_markup=kb.get_keyboard_role(roles, selected=part),
+                reply_markup=kb.get_keyboard_roles(roles, selected=part),
                 parse_mode=content.markdown
             )
         case ["role", "create"]:
             bot.edit_message_text("Создай через БД: TODO", # TODO
                 c.from_user.id, c.message.id)
+        case ["role", "start", _]:
+            part = int(data[-1])
+            roles = store.get_roles(full=True)
+            if len(roles) <= part:
+                bot.edit_message_text("Информация устарела /roles",
+                    c.from_user.id, c.message.id, 
+                )
+            role = roles[part]
+            bot.edit_message_text(f"Задача _{role['task']['title']}_\nОписание: {role['task']['description']}",
+                c.from_user.id, c.message.id, reply_markup=kb.get_keyboard_role(role), parse_mode=content.markdown
+            )
+            bot.edit_message_text("В разработке...")
         case [_, "access", _]:
             uuid = int(data[0])
             action = data[-1]

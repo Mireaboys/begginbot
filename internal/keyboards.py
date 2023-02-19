@@ -10,7 +10,7 @@ def get_keyboard_bio(skip=0):
         keyboard.add(types.InlineKeyboardButton(text=part, callback_data=f"bio_part_{i+1}"))
     return keyboard
 
-def get_keyboard_role(roles, selected=0, start=True):
+def get_keyboard_roles(roles, selected=0, start=True):
     keyboard = types.InlineKeyboardMarkup()
     if not roles:
         keyboard.add(types.InlineKeyboardButton(text="Роли не найдены. Добавить", callback_data=f"role_create"))
@@ -20,6 +20,11 @@ def get_keyboard_role(roles, selected=0, start=True):
         keyboard.add(types.InlineKeyboardButton(text=role["title"].title(), callback_data=f"role_part_{i}"))
     if start:
         keyboard.add(types.InlineKeyboardButton(text="Подтвердить выбор", callback_data=f"role_start_{selected}"))
+    return keyboard
+
+def get_keyboard_role(role):
+    keyboard = types.InlineKeyboardMarkup()
+
     return keyboard
 
 def get_keyboard_access(user, true=True):

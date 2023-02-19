@@ -69,9 +69,11 @@ class Store:
         """Дать/Забрать доступ по айди тг"""
         self.store.users.update_one({"uuid": uuid},{"$set": {"access": access}})
 
-    def get_roles(self):
+    def get_roles(self, full=True):
         roles = []
-        for r in self.store.roles.find({},{"_id": 1, "title": 1, "about": 1, "skills": 1}):
+        select = {"_id": 1, "title": 1, "about": 1, "skills": 1}
+        if full: select = {}
+        for r in self.store.roles.find({},select):
             roles.append(r)
         return roles
 
