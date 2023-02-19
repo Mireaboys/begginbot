@@ -133,7 +133,7 @@ def handle_message_company(m):
     bot.send_message(
         m.chat.id, 
         "🗄 Проводник", 
-        reply_markup=kb.get_keyboard_explorer(asseter.types),
+        reply_markup=kb.get_keyboard_explorer(asseter.typesdoc),
     )
 
 @bot.message_handler(commands=['roles'])
@@ -238,10 +238,21 @@ def callback_bot(c: types.CallbackQuery):
         case ["photo", ">"]:
             photo = asseter.get_rand_photo()
             if not photo:
-                bot.send_message(c.message.chat.id, internal_error)
+                bot.send_message(c.message.chat.id, "Нет фотографий")
                 return
             bot.delete_message(c.from_user.id, c.message.id)
             bot.send_photo(c.from_user.id, photo, reply_markup=kb.get_keyboard_photo_navigation())
+        case ["doc", "id", _]:
+            idx = int(data[-1])
+            if idx >= len(asseter.documents):
+                bot.send_message(c.message.chat.id, internal_error)
+                return
+            doc_name = asseter.documents[idx]
+            doc = asseter.get_doc_by_name(doc_name)
+            if not doc:
+                bot.send_message(c.message.chat.id, internal_error)
+                return
+            bot.send_document(c.message.chat.id, doc)
         case ["typesdoc", "id", _]:
             idx = int(data[-1])
             if idx >= len(asseter.typesdoc):
@@ -251,10 +262,17 @@ def callback_bot(c: types.CallbackQuery):
                 case "Фотографии":
                     photo = asseter.get_rand_photo()
                     if not photo:
-                        bot.send_message(c.message.chat.id, internal_error)
+                        bot.send_message(c.message.chat.id, "Нет фотографий")
                         return
                     bot.send_photo(c.from_user.id, photo, reply_markup=kb.get_keyboard_photo_navigation())
                 case "Документы":
-                    pass
+                    if not asseter.documents:
+                        bot.send_message(c.message.chat.id, "Нет документов")
+                        return
+                    asseter.refresh_documents()
+                    bot.send_message(
+                        c.message.chat.id, 
+                        "📁 Документы", 
+                        reply_markup=kb.get_keyboard_doc(asseter.documents))
 
     return

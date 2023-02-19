@@ -67,10 +67,6 @@ def get_keyboard_explorer(typesdoc, start_i=0):
                 callback_data=f"typesdoc_id_{i}"))
 
     if start_i + on_page >= len(typesdoc): 
-        keyboard.add(btn_next_l)
-    elif start_i == 0: 
-        keyboard.add(btn_next_r)
-    else: 
         keyboard.add(btn_next_l, btn_next_r,)
     return keyboard
 
@@ -79,4 +75,21 @@ def get_keyboard_photo_navigation():
     btn_next = types.InlineKeyboardButton(text="Листать ➡️", callback_data=f"photo_>")
     btn_upload = types.InlineKeyboardButton(text="Загрузить 📤", callback_data=f"photo_upload")
     keyboard.add(btn_upload, btn_next)
+    return keyboard
+
+def get_keyboard_doc(docs, start_i=0):
+    keyboard = types.InlineKeyboardMarkup()
+    btn_next_r = types.InlineKeyboardButton(text="➡️", callback_data=f"doc_{start_i+on_page}_>")
+    btn_next_l = types.InlineKeyboardButton(text="⬅️", callback_data=f"doc_{start_i-on_page}_>")
+    btn_upload = types.InlineKeyboardButton(text="Загрузить 📤", callback_data=f"doc_upload")
+    for i in range(start_i, start_i + on_page):
+        if i == len(docs): break
+        keyboard.add(
+            types.InlineKeyboardButton(
+                text=f"{docs[i]}", 
+                callback_data=f"doc_id_{i}"))
+
+    if start_i + on_page >= len(docs):
+        keyboard.add(btn_next_l, btn_next_r,)
+    keyboard.add(btn_upload)
     return keyboard
