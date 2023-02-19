@@ -14,7 +14,11 @@ photo_formats = ["jpg", "png"]
 
 def open_directory_and_get_filenames(dir_name):
     files = os.listdir(os.path.join(assets_path, dir_name))
-    files.remove(ignore_files[0]) # TODO
+    try:
+        files.remove(ignore_files[0]) # TODO
+    except Exception as err:
+        log.warn(err)
+        pass
     return files
 
 def get_file(dir, name):
