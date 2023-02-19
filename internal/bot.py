@@ -33,7 +33,11 @@ api = FakeAsyncApi(gpt_url)
 store = Store(mongo_conn)
 asseter = Asseter()
 
+# Костыль для моментов, где обработки ошибки займет много времени
+internal_error = "Internal error"
+
 class Access(custom_filters.SimpleCustomFilter):
+    """Проверка на доступ (фильтр)"""
     key='user_have_access'
     @staticmethod
     def check(m: types.Message):
@@ -46,6 +50,7 @@ class Access(custom_filters.SimpleCustomFilter):
 bot.add_custom_filter(Access())
 
 def message_next(m):
+    """Отправка рандомного забавного факта"""
     bot.send_message(
         m.chat.id, 
         content.get_rand_facts(), 
@@ -54,6 +59,7 @@ def message_next(m):
 
 @bot.message_handler(commands=['admin'])
 def handle_message_users(m):
+    """Первая страница для Администратора"""
     user = store.get_user(m.from_user.id)
     if not user["admin"]:
         bot.send_message(m.chat.id, "👤 Доступ запрещен")
@@ -66,6 +72,7 @@ def handle_message_users(m):
     
 @bot.message_handler(commands=['access'])
 def handle_message_access(m):
+    """Запросить доступ и зарегать пользователя"""
     user = store.get_user(m.chat.id)
     if user["access"] == True:
         bot.send_message(m.chat.id, "У тебя уже есть доступ /company")
@@ -104,8 +111,9 @@ def user_access_step_1(m, user):
                     reply_markup=kb.get_keyboard_access(user, true=True))
     bot.send_message(m.chat.id, "Я отправил сообщение выше, жди ответа. Пока можешь поразвлекать себя /roles")
 
-@bot.message_handler(commands=['init'])
-def handle_message_access(m):
+@bot.message_handler(commands=['init']) # DEV
+def handle_message_init(m):
+    """FAKE ADMIN"""
     user = store.get_user(m.chat.id, admin=True)
     store.refresh_admins()
     bot.send_message(m.chat.id, str(user))
@@ -141,6 +149,7 @@ def handle_message_roles(m):
 
 @bot.message_handler(commands=['Web3000toWeb2'])
 def handle_message_web3000(m):
+    """CHAT GPT3 OPENAI - фейковая асинхроность в другом потоке"""
     bot.send_message(
         m.chat.id, 
         content.user_request
@@ -157,6 +166,7 @@ def web3000(m):
 
 @bot.callback_query_handler(func=lambda c: c.data)
 def callback_bot(c: types.CallbackQuery):
+    """Дальше идет магия колбеков"""
     data = c.data.split("_")
     match data:
         case ["bio", "part", _]:
@@ -228,20 +238,20 @@ def callback_bot(c: types.CallbackQuery):
         case ["photo", ">"]:
             photo = asseter.get_rand_photo()
             if not photo:
-                bot.send_message(c.message.chat.id, "Internal error")
+                bot.send_message(c.message.chat.id, internal_error)
                 return
             bot.delete_message(c.from_user.id, c.message.id)
             bot.send_photo(c.from_user.id, photo, reply_markup=kb.get_keyboard_photo_navigation())
         case ["typesdoc", "id", _]:
             idx = int(data[-1])
             if idx >= len(asseter.typesdoc):
-                bot.send_message(c.message.chat.id, "Internal error")
+                bot.send_message(c.message.chat.id, internal_error)
                 return
             match asseter.typesdoc[idx]:
                 case "Фотографии":
                     photo = asseter.get_rand_photo()
                     if not photo:
-                        bot.send_message(c.message.chat.id, "Internal error")
+                        bot.send_message(c.message.chat.id, internal_error)
                         return
                     bot.send_photo(c.from_user.id, photo, reply_markup=kb.get_keyboard_photo_navigation())
                 case "Документы":

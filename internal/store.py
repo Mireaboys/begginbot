@@ -23,18 +23,29 @@ class Role:
 
 
 class Store:
+    """
+    Движок БД
+    """
     admins = []
     def __init__(self, connection):
         self.store = MongoClient(connection)["store"]
         self.refresh_admins()
 
     def get_user(self, uuid, admin=False, force=True):
+        """
+        Получить пользователя по айди тг
+        admin - сделать админом
+        force - если нет, то создать
+        """
         user = self.store.users.find_one({"uuid": uuid})
         if not user and force:
             data = self.store.users.insert_one({"uuid": uuid, "access": False, "admin": admin, "name": ""})
             user = self.store.users.find_one({"_id": data.inserted_id})
         return user
     def get_user_by_id(self, _id):
+        """
+        Получить пользователя по айди БД
+        """
         return self.store.users.find_one({"_id": ObjectId(_id)})
         
     def get_users(self, with_admins=False):
@@ -55,6 +66,7 @@ class Store:
         )
 
     def access(self, uuid, access=True):
+        """Дать/Забрать доступ по айди тг"""
         self.store.users.update_one({"uuid": uuid},{"$set": {"access": access}})
 
     def get_roles(self):
