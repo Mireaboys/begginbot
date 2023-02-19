@@ -9,8 +9,6 @@ services:
       - 27017:27017
     volumes:
       - ~/mongodb/data/db:/data/db
-      - /opt/bot/documents:/assets/documents
-      - /opt/bot/photos:/assets/photos
     environment:
       MONGO_INITDB_ROOT_USERNAME: ${MONGO_USERNAME}
       MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD}
@@ -20,5 +18,8 @@ services:
     restart: always
     env_file:
       - .env
+    volumes:
+      - /opt/bot/documents:/assets/documents
+      - /opt/bot/photos:/assets/photos
     environment:
       CONNECTION: mongodb://${MONGO_USERNAME}:${MONGO_PASSWORD}@mongo:27017
