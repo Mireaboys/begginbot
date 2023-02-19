@@ -53,3 +53,6 @@ python main.py
 * Виберг Даниил Product Manager & Marketing Specialist https://t.me/User_DK
 * Голубенко Елизавета Product Manager & Designer https://t.me/golubenkolisa
 * Никольский Антон Junior Analyst & Writer
+
+### Пару приколов от OpenAI
+![img](./screenshots/openailol.png)
