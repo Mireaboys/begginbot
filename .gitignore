@@ -4,3 +4,5 @@
 mongodb/data/db
 assets/photos/*
 assets/documents/*
+!assets/photos/.gitkeep
+!assets/documents/.gitkeep
